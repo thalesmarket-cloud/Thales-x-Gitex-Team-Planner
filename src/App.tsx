@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useEffect, useMemo, Component } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { 
   DndContext, 
   DragOverlay, 
@@ -40,22 +40,10 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { format, parseISO } from 'date-fns';
-import { 
-  onSnapshot, 
-  collection, 
-  setDoc, 
-  doc, 
-  deleteDoc, 
-  writeBatch,
-  query,
-  where
-} from 'firebase/firestore';
-import { onAuthStateChanged, User } from 'firebase/auth';
 
 import { TeamMember, Assignment, Role, PoloSize } from './types';
 import { SAMPLE_MEMBERS, SHIFTS, EVENT_DAYS, ROLES, MEMBER_COLORS, POLO_SIZES } from './constants';
 import { cn } from './lib/utils';
-import { db, auth, signIn, logOut, handleFirestoreError, OperationType } from './firebase';
 
 // --- Components ---
 
@@ -73,17 +61,7 @@ const StatCard = ({ label, value, icon: Icon, colorClass }: { label: string, val
 
 // --- Main App ---
 
-// --- Main App ---
-
 export default function App() {
-  return (
-    <AppContent />
-  );
-}
-
-function AppContent() {
-  const [user, setUser] = useState<User | null>(null);
-  const [isAuthReady, setIsAuthReady] = useState(false);
   const [members, setMembers] = useState<TeamMember[]>([]);
   const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
@@ -92,59 +70,43 @@ function AppContent() {
   const [memberToDelete, setMemberToDelete] = useState<TeamMember | null>(null);
   const [showSaveSuccess, setShowSaveSuccess] = useState(false);
 
-  // Auth listener
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (u) => {
-      setUser(u);
-      setIsAuthReady(true);
-    });
-    return () => unsubscribe();
-  }, []);
-
-  // Real-time Firestore listeners
-  useEffect(() => {
-    if (!isAuthReady || !user) return;
-
-    const unsubMembers = onSnapshot(collection(db, 'members'), (snapshot) => {
-      const docs = snapshot.docs.map(doc => doc.data() as TeamMember);
-      setMembers(docs);
-    }, (error) => handleFirestoreError(error, OperationType.LIST, 'members'));
-
-    const unsubAssignments = onSnapshot(collection(db, 'assignments'), (snapshot) => {
-      const docs = snapshot.docs.map(doc => doc.data() as Assignment);
-      setAssignments(docs);
-    }, (error) => handleFirestoreError(error, OperationType.LIST, 'assignments'));
-
-    return () => {
-      unsubMembers();
-      unsubAssignments();
-    };
-  }, [isAuthReady, user]);
-
   const handleSave = () => {
+    localStorage.setItem('gitex-members', JSON.stringify(members));
+    localStorage.setItem('gitex-assignments', JSON.stringify(assignments));
     setShowSaveSuccess(true);
     setTimeout(() => setShowSaveSuccess(false), 3000);
   };
 
-  const handleDeleteMember = async (member: TeamMember) => {
-    try {
-      // Delete member
-      await deleteDoc(doc(db, 'members', member.id));
-      
-      // Delete their assignments
-      const batch = writeBatch(db);
-      const memberAssignments = assignments.filter(a => a.memberId === member.id);
-      memberAssignments.forEach(a => {
-        const assignmentId = `${a.memberId}_${a.shiftId}`;
-        batch.delete(doc(db, 'assignments', assignmentId));
-      });
-      await batch.commit();
-      
-      setMemberToDelete(null);
-    } catch (error) {
-      handleFirestoreError(error, OperationType.DELETE, `members/${member.id}`);
-    }
+  const handleDeleteMember = (member: TeamMember) => {
+    setMembers(prev => prev.filter(m => m.id !== member.id));
+    setAssignments(prev => prev.filter(a => a.memberId !== member.id));
+    setMemberToDelete(null);
   };
+
+  // Initialize state
+  useEffect(() => {
+    const savedMembers = localStorage.getItem('gitex-members');
+    const savedAssignments = localStorage.getItem('gitex-assignments');
+
+    if (savedMembers) {
+      setMembers(JSON.parse(savedMembers));
+    } else {
+      setMembers(SAMPLE_MEMBERS);
+    }
+
+    if (savedAssignments) {
+      setAssignments(JSON.parse(savedAssignments));
+    }
+  }, []);
+
+  // Persist state
+  useEffect(() => {
+    localStorage.setItem('gitex-members', JSON.stringify(members));
+  }, [members]);
+
+  useEffect(() => {
+    localStorage.setItem('gitex-assignments', JSON.stringify(assignments));
+  }, [assignments]);
 
   // Drag and Drop Sensors
   const sensors = useSensors(
@@ -162,11 +124,11 @@ function AppContent() {
     setActiveId(event.active.id as string);
   };
 
-  const handleDragEnd = async (event: DragEndEvent) => {
+  const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
     setActiveId(null);
 
-    if (!over || !user) return;
+    if (!over) return;
 
     const memberId = active.id as string;
     const shiftId = over.id as string;
@@ -174,37 +136,17 @@ function AppContent() {
     if (shiftId.includes('-')) {
       const exists = assignments.some(a => a.memberId === memberId && a.shiftId === shiftId);
       if (exists) return;
-      
-      try {
-        const assignmentId = `${memberId}_${shiftId}`;
-        await setDoc(doc(db, 'assignments', assignmentId), { memberId, shiftId });
-      } catch (error) {
-        handleFirestoreError(error, OperationType.WRITE, `assignments/${memberId}_${shiftId}`);
-      }
+      setAssignments(prev => [...prev, { memberId, shiftId }]);
     }
   };
 
-  const removeAssignment = async (memberId: string, shiftId: string) => {
-    try {
-      const assignmentId = `${memberId}_${shiftId}`;
-      await deleteDoc(doc(db, 'assignments', assignmentId));
-    } catch (error) {
-      handleFirestoreError(error, OperationType.DELETE, `assignments/${memberId}_${shiftId}`);
-    }
+  const removeAssignment = (memberId: string, shiftId: string) => {
+    setAssignments(prev => prev.filter(a => !(a.memberId === memberId && a.shiftId === shiftId)));
   };
 
-  const resetPlanning = async () => {
-    if (confirm('Êtes-vous sûr de vouloir réinitialiser toutes les affectations ?')) {
-      try {
-        const batch = writeBatch(db);
-        assignments.forEach(a => {
-          const assignmentId = `${a.memberId}_${a.shiftId}`;
-          batch.delete(doc(db, 'assignments', assignmentId));
-        });
-        await batch.commit();
-      } catch (error) {
-        handleFirestoreError(error, OperationType.DELETE, 'assignments');
-      }
+  const resetPlanning = () => {
+    if (confirm('Are you sure you want to reset all shift assignments?')) {
+      setAssignments([]);
     }
   };
 
@@ -245,38 +187,6 @@ function AppContent() {
     return members.filter(m => !assignments.some(a => a.memberId === m.id));
   }, [members, assignments]);
 
-  if (!isAuthReady) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50">
-        <div className="flex flex-col items-center gap-4">
-          <div className="w-12 h-12 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
-          <p className="text-slate-500 font-medium">Chargement...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (!user) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50 p-4">
-        <div className="bg-white p-10 rounded-3xl shadow-xl max-w-md w-full text-center border border-slate-200">
-          <div className="w-20 h-20 bg-indigo-600 rounded-2xl flex items-center justify-center mx-auto mb-8 shadow-lg shadow-indigo-200">
-            <CalendarDays className="text-white" size={40} />
-          </div>
-          <h1 className="text-3xl font-bold text-slate-900 mb-2">GITEX Planner</h1>
-          <p className="text-slate-500 mb-10 font-medium">Connectez-vous pour accéder au planning de l'équipe Thalès.</p>
-          <button 
-            onClick={signIn}
-            className="w-full py-4 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-500 transition-all shadow-lg shadow-indigo-200 flex items-center justify-center gap-3"
-          >
-            <Users size={20} />
-            Se connecter avec Google
-          </button>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="min-h-screen bg-slate-50 text-slate-700 font-sans">
       {/* Header */}
@@ -292,51 +202,35 @@ function AppContent() {
             </div>
           </div>
 
-          <div className="flex items-center gap-6">
-            <div className="flex items-center gap-3 pr-6 border-r border-slate-200">
-              <div className="text-right hidden sm:block">
-                <div className="text-sm font-bold text-slate-900">{user.displayName}</div>
-                <div className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">{user.email}</div>
-              </div>
-              <button 
-                onClick={logOut}
-                className="p-2 rounded-xl bg-slate-100 text-slate-600 hover:bg-slate-200 transition-colors"
-                title="Déconnexion"
-              >
-                <RotateCcw size={18} />
-              </button>
-            </div>
-
-            <div className="flex gap-3">
-              <button 
-                onClick={handleSave}
-                className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white transition-all font-semibold text-sm shadow-lg shadow-emerald-200"
-              >
-                <Save size={18} />
-                <span>Sauvegarder</span>
-              </button>
-              <button 
-                onClick={resetPlanning}
-                className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 transition-all font-semibold text-sm"
-              >
-                <RotateCcw size={18} />
-                <span>Reset</span>
-              </button>
-              <button 
-                onClick={() => window.print()}
-                className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 transition-all font-semibold text-sm"
-              >
-                <Download size={18} />
-                <span>PDF</span>
-              </button>
-              <button 
-                onClick={exportCSV}
-                className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white transition-all font-semibold text-sm shadow-lg shadow-indigo-200"
-              >
-                <Download size={18} />
-                <span>CSV</span>
-              </button>
-            </div>
+          <div className="flex gap-3">
+            <button 
+              onClick={handleSave}
+              className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white transition-all font-semibold text-sm shadow-lg shadow-emerald-200"
+            >
+              <Save size={18} />
+              <span>Sauvegarder</span>
+            </button>
+            <button 
+              onClick={resetPlanning}
+              className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 transition-all font-semibold text-sm"
+            >
+              <RotateCcw size={18} />
+              <span>Reset</span>
+            </button>
+            <button 
+              onClick={() => window.print()}
+              className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 transition-all font-semibold text-sm"
+            >
+              <Download size={18} />
+              <span>PDF</span>
+            </button>
+            <button 
+              onClick={exportCSV}
+              className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white transition-all font-semibold text-sm shadow-lg shadow-indigo-200"
+            >
+              <Download size={18} />
+              <span>CSV</span>
+            </button>
           </div>
         </div>
       </header>
@@ -525,14 +419,14 @@ function AppContent() {
           setShowAddModal(false);
           setIsEditingMember(null);
         }}
-        onSave={async (member) => {
-          try {
-            await setDoc(doc(db, 'members', member.id), member);
-            setShowAddModal(false);
-            setIsEditingMember(null);
-          } catch (error) {
-            handleFirestoreError(error, OperationType.WRITE, `members/${member.id}`);
+        onSave={(member) => {
+          if (isEditingMember) {
+            setMembers(prev => prev.map(m => m.id === member.id ? member : m));
+          } else {
+            setMembers(prev => [...prev, member]);
           }
+          setShowAddModal(false);
+          setIsEditingMember(null);
         }}
         initialData={isEditingMember || undefined}
       />
