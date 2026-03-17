@@ -25,6 +25,8 @@ export const SHIFTS: Shift[] = EVENT_DAYS.flatMap((date) => [
 
 export const ROLES = ['Directeur Général', 'Directeur Commercial', 'Commercial', 'Marketing', 'Consultant'];
 
+export const POLO_SIZES = ['S', 'M', 'L', 'XL', 'XXL'];
+
 export const MEMBER_COLORS = [
   'bg-blue-500',
   'bg-purple-500',
@@ -44,6 +46,7 @@ export const SAMPLE_MEMBERS = [
     phone: '+212 600-112233',
     email: 'amine@gitex.ma',
     color: 'bg-blue-500',
+    poloSize: 'L',
   },
   {
     id: '2',
@@ -52,6 +55,7 @@ export const SAMPLE_MEMBERS = [
     phone: '+212 600-445566',
     email: 'sarah@gitex.ma',
     color: 'bg-purple-500',
+    poloSize: 'M',
   },
   {
     id: '3',
@@ -60,6 +64,7 @@ export const SAMPLE_MEMBERS = [
     phone: '+212 600-778899',
     email: 'youssef@gitex.ma',
     color: 'bg-emerald-500',
+    poloSize: 'XL',
   },
   {
     id: '4',
@@ -68,6 +73,7 @@ export const SAMPLE_MEMBERS = [
     phone: '+212 600-001122',
     email: 'laila@gitex.ma',
     color: 'bg-amber-500',
+    poloSize: 'S',
   },
   {
     id: '5',
@@ -76,6 +82,7 @@ export const SAMPLE_MEMBERS = [
     phone: '+212 600-334455',
     email: 'mehdi@gitex.ma',
     color: 'bg-rose-500',
+    poloSize: 'L',
   },
   {
     id: '6',
@@ -84,5 +91,6 @@ export const SAMPLE_MEMBERS = [
     phone: '+212 600-667788',
     email: 'zineb@gitex.ma',
     color: 'bg-indigo-500',
+    poloSize: 'M',
   },
 ];

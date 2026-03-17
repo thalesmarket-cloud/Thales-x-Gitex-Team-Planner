@@ -1,4 +1,5 @@
 export type Role = 'Directeur Général' | 'Directeur Commercial' | 'Commercial' | 'Marketing' | 'Consultant';
+export type PoloSize = 'S' | 'M' | 'L' | 'XL' | 'XXL';
 
 export interface TeamMember {
   id: string;
@@ -7,6 +8,7 @@ export interface TeamMember {
   phone: string;
   email: string;
   color: string;
+  poloSize?: PoloSize;
 }
 
 export type ShiftType = 'Morning' | 'Afternoon';

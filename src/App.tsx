@@ -41,8 +41,8 @@ import {
 import { motion, AnimatePresence } from 'motion/react';
 import { format, parseISO } from 'date-fns';
 
-import { TeamMember, Assignment, Role } from './types';
-import { SAMPLE_MEMBERS, SHIFTS, EVENT_DAYS, ROLES, MEMBER_COLORS } from './constants';
+import { TeamMember, Assignment, Role, PoloSize } from './types';
+import { SAMPLE_MEMBERS, SHIFTS, EVENT_DAYS, ROLES, MEMBER_COLORS, POLO_SIZES } from './constants';
 import { cn } from './lib/utils';
 
 // --- Components ---
@@ -491,7 +491,14 @@ function DraggableMember({ member }: DraggableMemberProps) {
       </div>
       <div className="flex-1 min-w-0">
         <div className="text-sm font-bold text-slate-900 truncate">{member.name}</div>
-        <div className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">{member.role}</div>
+        <div className="flex items-center gap-2">
+          <div className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">{member.role}</div>
+          {member.poloSize && (
+            <div className="text-[9px] bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded-md font-bold">
+              {member.poloSize}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -627,6 +634,7 @@ function MemberModal({
   const [formData, setFormData] = useState<Partial<TeamMember>>({
     name: '',
     role: 'Commercial',
+    poloSize: 'L',
     phone: '',
     email: '',
     color: MEMBER_COLORS[0]
@@ -639,6 +647,7 @@ function MemberModal({
       setFormData({
         name: '',
         role: 'Commercial',
+        poloSize: 'L',
         phone: '',
         email: '',
         color: MEMBER_COLORS[Math.floor(Math.random() * MEMBER_COLORS.length)]
@@ -697,21 +706,34 @@ function MemberModal({
               </select>
             </div>
             <div className="space-y-2">
-              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Color</label>
-              <div className="flex gap-2 flex-wrap pt-2">
-                {MEMBER_COLORS.map(color => (
-                  <button
-                    key={color}
-                    type="button"
-                    onClick={() => setFormData(prev => ({ ...prev, color }))}
-                    className={cn(
-                      "w-6 h-6 rounded-full transition-all",
-                      color,
-                      formData.color === color ? "ring-2 ring-indigo-600 ring-offset-2 scale-110" : "opacity-60 hover:opacity-100"
-                    )}
-                  />
+              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Taille du polo</label>
+              <select 
+                value={formData.poloSize}
+                onChange={e => setFormData(prev => ({ ...prev, poloSize: e.target.value as PoloSize }))}
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-900 focus:outline-none focus:border-indigo-500 transition-colors"
+              >
+                {POLO_SIZES.map(size => (
+                  <option key={size} value={size}>{size}</option>
                 ))}
-              </div>
+              </select>
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Color</label>
+            <div className="flex gap-2 flex-wrap pt-2">
+              {MEMBER_COLORS.map(color => (
+                <button
+                  key={color}
+                  type="button"
+                  onClick={() => setFormData(prev => ({ ...prev, color }))}
+                  className={cn(
+                    "w-6 h-6 rounded-full transition-all",
+                    color,
+                    formData.color === color ? "ring-2 ring-indigo-600 ring-offset-2 scale-110" : "opacity-60 hover:opacity-100"
+                  )}
+                />
+              ))}
             </div>
           </div>
 
