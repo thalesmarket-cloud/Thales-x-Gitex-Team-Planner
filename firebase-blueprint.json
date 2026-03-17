@@ -1,0 +1,39 @@
+{
+  "entities": {
+    "TeamMember": {
+      "title": "Team Member",
+      "description": "A member of the Thalès team at GITEX",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "role": { "type": "string" },
+        "poloSize": { "type": "string" },
+        "phone": { "type": "string" },
+        "email": { "type": "string" },
+        "color": { "type": "string" }
+      },
+      "required": ["id", "name", "role", "color"]
+    },
+    "Assignment": {
+      "title": "Assignment",
+      "description": "A shift assignment for a team member",
+      "type": "object",
+      "properties": {
+        "memberId": { "type": "string" },
+        "shiftId": { "type": "string" }
+      },
+      "required": ["memberId", "shiftId"]
+    }
+  },
+  "firestore": {
+    "members": {
+      "schema": "TeamMember",
+      "description": "Collection of team members"
+    },
+    "assignments": {
+      "schema": "Assignment",
+      "description": "Collection of shift assignments"
+    }
+  }
+}
