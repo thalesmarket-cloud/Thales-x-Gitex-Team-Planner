@@ -23,7 +23,7 @@ export const SHIFTS: Shift[] = EVENT_DAYS.flatMap((date) => [
   },
 ]);
 
-export const ROLES = ['Manager', 'Sales', 'Technical', 'Support', 'Marketing'];
+export const ROLES = ['Directeur Général', 'Directeur Commercial', 'Commercial', 'Marketing', 'Consultant'];
 
 export const MEMBER_COLORS = [
   'bg-blue-500',
@@ -40,7 +40,7 @@ export const SAMPLE_MEMBERS = [
   {
     id: '1',
     name: 'Amine Benali',
-    role: 'Manager',
+    role: 'Directeur Général',
     phone: '+212 600-112233',
     email: 'amine@gitex.ma',
     color: 'bg-blue-500',
@@ -48,7 +48,7 @@ export const SAMPLE_MEMBERS = [
   {
     id: '2',
     name: 'Sarah Mansouri',
-    role: 'Sales',
+    role: 'Directeur Commercial',
     phone: '+212 600-445566',
     email: 'sarah@gitex.ma',
     color: 'bg-purple-500',
@@ -56,7 +56,7 @@ export const SAMPLE_MEMBERS = [
   {
     id: '3',
     name: 'Youssef Idrisi',
-    role: 'Technical',
+    role: 'Consultant',
     phone: '+212 600-778899',
     email: 'youssef@gitex.ma',
     color: 'bg-emerald-500',
@@ -72,7 +72,7 @@ export const SAMPLE_MEMBERS = [
   {
     id: '5',
     name: 'Mehdi Tazi',
-    role: 'Support',
+    role: 'Commercial',
     phone: '+212 600-334455',
     email: 'mehdi@gitex.ma',
     color: 'bg-rose-500',
@@ -80,7 +80,7 @@ export const SAMPLE_MEMBERS = [
   {
     id: '6',
     name: 'Zineb Alaoui',
-    role: 'Sales',
+    role: 'Commercial',
     phone: '+212 600-667788',
     email: 'zineb@gitex.ma',
     color: 'bg-indigo-500',

@@ -1,4 +1,4 @@
-export type Role = 'Manager' | 'Sales' | 'Technical' | 'Support' | 'Marketing';
+export type Role = 'Directeur Général' | 'Directeur Commercial' | 'Commercial' | 'Marketing' | 'Consultant';
 
 export interface TeamMember {
   id: string;

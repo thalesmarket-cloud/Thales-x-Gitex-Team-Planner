@@ -35,7 +35,8 @@ import {
   Trash2,
   Edit2,
   X,
-  LayoutDashboard
+  LayoutDashboard,
+  Save
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { format, parseISO } from 'date-fns';
@@ -67,6 +68,14 @@ export default function App() {
   const [isEditingMember, setIsEditingMember] = useState<TeamMember | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
   const [memberToDelete, setMemberToDelete] = useState<TeamMember | null>(null);
+  const [showSaveSuccess, setShowSaveSuccess] = useState(false);
+
+  const handleSave = () => {
+    localStorage.setItem('gitex-members', JSON.stringify(members));
+    localStorage.setItem('gitex-assignments', JSON.stringify(assignments));
+    setShowSaveSuccess(true);
+    setTimeout(() => setShowSaveSuccess(false), 3000);
+  };
 
   const handleDeleteMember = (member: TeamMember) => {
     setMembers(prev => prev.filter(m => m.id !== member.id));
@@ -195,6 +204,13 @@ export default function App() {
 
           <div className="flex gap-3">
             <button 
+              onClick={handleSave}
+              className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white transition-all font-semibold text-sm shadow-lg shadow-emerald-200"
+            >
+              <Save size={18} />
+              <span>Sauvegarder</span>
+            </button>
+            <button 
               onClick={resetPlanning}
               className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 transition-all font-semibold text-sm"
             >
@@ -315,8 +331,8 @@ export default function App() {
             </div>
 
             {/* Team Management (Right) */}
-            <div className="lg:col-span-4 space-y-6">
-              <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm sticky top-32">
+            <div className="lg:col-span-4 space-y-6 sticky top-32 self-start">
+              <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm">
                 <div className="flex items-center justify-between mb-6">
                   <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2">
                     <Users size={24} className="text-indigo-600" />
@@ -420,6 +436,23 @@ export default function App() {
         onClose={() => setMemberToDelete(null)} 
         onConfirm={() => memberToDelete && handleDeleteMember(memberToDelete)} 
       />
+
+      {/* Save Success Notification */}
+      <AnimatePresence>
+        {showSaveSuccess && (
+          <motion.div
+            initial={{ opacity: 0, y: 50 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 50 }}
+            className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50 bg-slate-900 text-white px-6 py-3 rounded-2xl shadow-2xl flex items-center gap-3 border border-slate-700"
+          >
+            <div className="w-6 h-6 rounded-full bg-emerald-500 flex items-center justify-center">
+              <CheckCircle2 size={14} />
+            </div>
+            <span className="font-bold text-sm">Avancement sauvegardé avec succès !</span>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
@@ -593,7 +626,7 @@ function MemberModal({
 }) {
   const [formData, setFormData] = useState<Partial<TeamMember>>({
     name: '',
-    role: 'Sales',
+    role: 'Commercial',
     phone: '',
     email: '',
     color: MEMBER_COLORS[0]
@@ -605,7 +638,7 @@ function MemberModal({
     } else {
       setFormData({
         name: '',
-        role: 'Sales',
+        role: 'Commercial',
         phone: '',
         email: '',
         color: MEMBER_COLORS[Math.floor(Math.random() * MEMBER_COLORS.length)]
